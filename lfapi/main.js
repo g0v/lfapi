@@ -1187,11 +1187,13 @@ Your LiquidFeedback maintainers",
       var query = new selector.SQLUpdate('member');
       query.addWhere(['member.id = ?', req.current_member_id]);
       fields.forEach( function(field) {
+        var tmp = {}
         if (typeof(params[field]) != 'undefined') {
-          query.addValues({ field: params[field] });
+          tmp[field] = params[field];
         } else {
-          query.addValues({ field: null });
+          tmp[field] = null;
         }
+        query.addValues(tmp);
       });
       db.query(conn, req, res, query, function(result) { respond('json', conn, req, res, 'ok'); });
     });

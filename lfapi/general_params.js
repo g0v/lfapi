@@ -112,7 +112,7 @@ exports.addIssueOptions = function (req, query, params) {
     } else {
       issue_states = params.issue_state.split(',');
     }
-    query.addWhere('"issue"."state" IN (??)', issue_states);
+    query.addWhere(['"issue"."state" IN (??)', issue_states]);
   };
   
   if (params.issue_accepted) query.addWhere('"issue"."accepted" NOTNULL');
