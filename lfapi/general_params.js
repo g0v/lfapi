@@ -138,6 +138,10 @@ exports.addIssueOptions = function (req, query, params) {
     query.addWhere(['(case issue.state when \'admission\' then issue.created + issue.admission_time when \'discussion\' then issue.accepted + issue.discussion_time when \'verification\' then issue.half_frozen + issue.verification_time when \'voting\' then issue.fully_frozen + issue.voting_time end) - now() < ?', params.issue_state_time_left_below]);
   };
   
+  if (params.issue_order_by_state_time_left) {
+    query.addOrderBy('(case issue.state when \'admission\' then issue.created + issue.admission_time when \'discussion\' then issue.accepted + issue.discussion_time when \'verification\' then issue.half_frozen + issue.verification_time when \'voting\' then issue.fully_frozen + issue.voting_time end)');
+  };
+  
   if (params.issue_order_by_id) query.addOrderBy('"issue"."id"');
 }
 
