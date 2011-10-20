@@ -46,7 +46,7 @@ function requireAccessLevel(conn, req, res, access_level, callback) {
 
 // callback function, encoding result and sending it to the client
 function respond(mode, conn, req, res, status, object, err) {
-  var http_status = 500;
+  var http_status = 200;
   var command;
 
   if (status == 'ok') {
@@ -137,7 +137,6 @@ function addRelatedData(conn, req, res, result, includes) {
 
     if (objects) {
       var objects_exists = false;
-      query = new selector.Selector();
       var ids_hash = {};
       if (typeof(objects) == 'array') {
         if (objects.length > 0) {
@@ -163,10 +162,12 @@ function addRelatedData(conn, req, res, result, includes) {
         for (key in ids_hash) {
           ids.push(key)
         }
-
-        query.from(class);
-        query.addWhere([class + '.id IN (??)', ids]);
-        fields.addObjectFields(query, class);
+        if (ids.length > 0) {
+          query = new selector.Selector();
+          query.from(class);
+          query.addWhere([class + '.id IN (??)', ids]);
+          fields.addObjectFields(query, class);
+        }
       };
     };
 
@@ -395,12 +396,22 @@ exports.get = {
       query.addField('"liquid_feedback_version".*');
       db.query(conn, req, res, query, function (result, conn) {
         var liquid_feedback_version = result.rows[0];
-        respond('json', conn, req, res, 'ok', {
-          core_version: liquid_feedback_version.string,
-          api_version: api_version,
-          current_access_level: req.current_member_id ? 'member' : req.current_access_level,
-          current_member_id: req.current_member_id,
-          settings: config.settings
+        var query = new selector.Selector();
+        query.from('"system_setting"');
+        query.addField('"member_ttl"');
+        db.query(conn, req, res, query, function (result, conn) {
+          var member_ttl = null;
+          if (result.rows[0]) {
+            member_ttl = result.rows[0].member_ttl;
+          };
+          respond('json', conn, req, res, 'ok', {
+            core_version: liquid_feedback_version.string,
+            api_version: api_version,
+            current_access_level: req.current_member_id ? 'member' : req.current_access_level,
+            current_member_id: req.current_member_id,
+            member_ttl: member_ttl,
+            settings: config.settings
+          });
         });
       });
     });
@@ -414,8 +425,8 @@ exports.get = {
       db.query(conn, req, res, query, function (result, conn) {
         var member_count = result.rows[0];
         respond('json', conn, req, res, 'ok', {
-          member_count: member_count.total_count,
-          member_count_calculated: member_count.calculated
+          total_count: member_count.total_count,
+          calculated: member_count.calculated
         });
       });
     });
@@ -641,8 +652,18 @@ exports.get = {
   '/interest': function (conn, req, res, params) {
     requireAccessLevel(conn, req, res, 'pseudonym', function() {
       var query = new selector.Selector();
-      query.from('interest JOIN member ON member.id = interest.member_id JOIN issue on interest.issue_id = issue.id JOIN policy ON policy.id = issue.policy_id JOIN area ON area.id = issue.area_id JOIN unit ON area.unit_id = unit.id');
+      if (!params.snapshot) {
+        query.from('interest');
+      } else if (params.snapshot == 'latest') {
+        query.from('direct_interest_snapshot', 'interest');
+        query.addWhere('interest.event = issue.latest_snapshot_event');
+      };
       query.addField('interest.*');
+      query.join('member', null, 'member.id = interest.member_id');
+      query.join('issue', null, 'interest.issue_id = issue.id');
+      query.join('policy', null, 'policy.id = issue.policy_id');
+      query.join('area', null, 'area.id = issue.area_id');
+      query.join('unit', null, 'area.unit_id = unit.id');
       general_params.addMemberOptions(req, query, params);
       general_params.addIssueOptions(req, query, params);
       query.addOrderBy('interest.issue_id, interest.member_id');
@@ -687,8 +708,8 @@ exports.get = {
       var query = new selector.Selector();
       query.from('initiative JOIN issue ON issue.id = initiative.issue_id JOIN policy ON policy.id = issue.policy_id JOIN area ON area.id = issue.area_id JOIN unit ON area.unit_id = unit.id');
       fields.addObjectFields(query, 'initiative');
+      query.addOrderBy('initiative.id');
       general_params.addInitiativeOptions(req, query, params);
-      query.addOrderBy('initiative.issue_id, initiative.id');
       general_params.addLimitAndOffset(query, params);
       db.query(conn, req, res, query, function (initiative_result, conn) {
         var result = { result: initiative_result.rows }
@@ -1187,13 +1208,11 @@ Your LiquidFeedback maintainers",
       var query = new selector.SQLUpdate('member');
       query.addWhere(['member.id = ?', req.current_member_id]);
       fields.forEach( function(field) {
-        var tmp = {}
         if (typeof(params[field]) != 'undefined') {
-          tmp[field] = params[field];
+          query.addValues({ field: params[field] });
         } else {
-          tmp[field] = null;
+          query.addValues({ field: null });
         }
-        query.addValues(tmp);
       });
       db.query(conn, req, res, query, function(result) { respond('json', conn, req, res, 'ok'); });
     });
@@ -1607,6 +1626,11 @@ Your LiquidFeedback maintainers",
         // new draft in new initiative in existant issue
         } else if (issue_id && !area_id && !initiative_id) {
 
+          if (!initiative_name) {
+            respond('json', conn, req, res, 'unprocessable', null, 'No initiative name supplied.');
+            return;
+          }
+          
           // check privilege
           requireIssuePrivilege(conn, req, res, issue_id, function() {
             
