@@ -90,10 +90,10 @@ function respond(mode, conn, req, res, status, object, err) {
 
       if (mode == 'json') {
         var body = JSON.stringify(object);
-        var content_type = 'application/json';
+        var content_type = 'application/json; charset=UTF-8';
         if (req.params && req.params.callback) {
           body = req.params.callback + '(' + body + ')';
-          content_type = 'text/javascript';
+          content_type = 'text/javascript; charset=UTF-8';
         }
         res.writeHead(
           http_status, 
@@ -111,7 +111,7 @@ function respond(mode, conn, req, res, status, object, err) {
         res.writeHead(
           http_status, 
           {
-            'Content-Type': 'text/html',
+            'Content-Type': 'text/html; charset=UTF-8',
             'Content-Length': body.length
           }
         );
