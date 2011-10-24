@@ -104,7 +104,7 @@ function respond(mode, conn, req, res, status, object, err) {
         );
         res.end(body);
       } else if (mode == 'html') {
-        var body = ['<html><head><title>lfapi</title><style>body { font-family: sans-serif; }</style></head><body>']
+        var body = ['<html><head><title>lfapi</title><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style>body { font-family: sans-serif; }</style></head><body>']
         body.push(object)
         body.push('</body></html>')
         body = body.join('');
