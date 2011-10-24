@@ -78,8 +78,6 @@ function respond(mode, conn, req, res, status, object, err) {
   db.query(conn, req, res, query, function(result, conn) {
     db.query(conn, req, res, command, function (result, conn) {
       
-      if (conn && typeof(conn) != 'string') conn.drain();
-
       if (mode == 'json') {
         if (! object) object = {};
       } else if (mode == 'html') {
@@ -101,7 +99,7 @@ function respond(mode, conn, req, res, status, object, err) {
           http_status, 
           {
             'Content-Type': content_type,
-            //'Content-Length': body.length
+            'Content-Length': body.length
           }
         );
         res.end(body);
