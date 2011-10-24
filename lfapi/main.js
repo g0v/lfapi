@@ -24,7 +24,7 @@ exports.db = db;
 
 var selector = db.selector;
 
-var email = require('mailer');
+var nodemailer = require('nodemailer');
 
 
 // check if current session has at least given access level, returns error to client if not.
@@ -1039,15 +1039,10 @@ exports.post = {
           
           db.query(conn, req, res, query, function (result, conn) {
 
+            nodemail.sendmail = '/usr/bin/sendmail';
+
             // send email to user
-            email.send({
-              host :          config.mail.smtp_host,
-              port:           config.mail.smtp_port,
-              ssl:            config.mail.smtp_ssl,
-              domain:         config.mail.smtp_domain,
-              authentication: config.mail.smtp_authentication,
-              username:       config.mail.smtp_username,
-              password:       config.mail.smtp_password,
+            nodemailer.send_mail({
               from:           config.mail.from,
               subject:        config.mail.subject_prefix + "Your LiquidFeedback API alpha test account needs confirmation",
               to:             member_notify_email,

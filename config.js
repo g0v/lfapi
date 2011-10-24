@@ -23,13 +23,6 @@ exports.public_url_path = 'http://lf.example.org/api/';
 
 // mail server, email sender and subject settings
 exports.mail = {
-  smtp_host:           'localhost',
-  smtp_port:           '25',
-  smtp_ssl:            false,
-  smtp_domain:         'localhost',
-  //smtp_authentication: 'login',
-  //smtp_username:       'username',
-  //smtp_password:       'password',
   from:                'Sender name <senderaddress@example.org>',
   subject_prefix:      '[email subject prefix] '
 };
