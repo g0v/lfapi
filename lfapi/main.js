@@ -1039,7 +1039,7 @@ exports.post = {
           
           db.query(conn, req, res, query, function (result, conn) {
 
-            nodemailer.sendmail = '/usr/bin/sendmail';
+            nodemailer.sendmail = '/usr/sbin/sendmail';
 
             // send email to user
             nodemailer.send_mail({
