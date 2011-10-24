@@ -99,7 +99,7 @@ function respond(mode, conn, req, res, status, object, err) {
           http_status, 
           {
             'Content-Type': content_type,
-            'Content-Length': body.length
+            //'Content-Length': body.length // TODO doesn't work in chrome with JSONP
           }
         );
         res.end(body);
