@@ -1043,7 +1043,7 @@ exports.post = {
 
             // send email to user
             nodemailer.send_mail({
-              from:           config.mail.from,
+              sender:         config.mail.from,
               subject:        config.mail.subject_prefix + "Your LiquidFeedback API alpha test account needs confirmation",
               to:             member_notify_email,
               body: "\
