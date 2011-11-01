@@ -318,7 +318,7 @@ function requireContingentLeft(conn, req, res, is_initiative, callback) {
 }
 
 // ==========================================================================
-// GETT methods
+// GET methods
 // ==========================================================================
 
 
