@@ -953,7 +953,6 @@ exports.get = {
   }); },
   
   // TODO add interfaces for data structure:
-  // event requireAccessLevel(conn, req, res, 'member');
   // ignored_member requireAccessLevel(conn, req, res, 'member');
   // ignored_initiative requireAccessLevel(conn, req, res, 'member');
   // setting requireAccessLevel(conn, req, res, 'member');
