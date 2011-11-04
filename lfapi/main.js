@@ -650,11 +650,27 @@ exports.get = {
   '/interest': function (conn, req, res, params) {
     requireAccessLevel(conn, req, res, 'pseudonym', function() {
       var query = new selector.Selector();
-      if (!params.snapshot) {
-        query.from('interest');
-      } else if (params.snapshot == 'latest') {
-        query.from('direct_interest_snapshot', 'interest');
-        query.addWhere('interest.event = issue.latest_snapshot_event');
+      switch (params.snapshot) {
+        case 'latest':
+          query.from('direct_interest_snapshot', 'interest');
+          query.addWhere('interest.event = issue.latest_snapshot_event');
+          break;
+          
+        case 'end_of_admission':
+        case 'half_freeze':
+        case 'full_freeze':
+          query.from('direct_interest_snapshot', 'interest');
+          query.addWhere('interest.event = ?', params.snapshot);
+          break;
+          
+        case undefined:
+          query.from('interest');
+          break;
+          
+        default:
+          respond('json', conn, req, res, 'unprocessable', { error: 'Invalid snapshot type' });
+          return;
+
       };
       query.addField('interest.*');
       query.join('member', null, 'member.id = interest.member_id');
@@ -929,28 +945,30 @@ exports.get = {
     });
   },
   
-  '/event': function (conn, req, res, params) { requireAccessLevel(conn, req, res, 'anonymous', function() {
-    var fields = ['event.id', 'event.occurrence', 'event.event', 'event.member_id', 'event.issue_id', 'event.state', 'event.initiative_id', 'event.draft_id', 'event.suggestion_id'];
-    var query = new selector.Selector();
-    query.from('event LEFT JOIN member ON member.id = event.member_id LEFT JOIN initiative ON initiative.id = event.initiative_id LEFT JOIN issue ON issue.id = event.issue_id LEFT JOIN policy ON policy.id = issue.policy_id LEFT JOIN area ON area.id = issue.area_id LEFT JOIN unit ON area.unit_id = unit.id');
-    fields.forEach( function(field) {
-      query.addField(field, null, ['grouped']);
+  '/event': function (conn, req, res, params) {
+    requireAccessLevel(conn, req, res, 'anonymous', function() {
+      var fields = ['event.id', 'event.occurrence', 'event.event', 'event.member_id', 'event.issue_id', 'event.state', 'event.initiative_id', 'event.draft_id', 'event.suggestion_id'];
+      var query = new selector.Selector();
+      query.from('event LEFT JOIN member ON member.id = event.member_id LEFT JOIN initiative ON initiative.id = event.initiative_id LEFT JOIN issue ON issue.id = event.issue_id LEFT JOIN policy ON policy.id = issue.policy_id LEFT JOIN area ON area.id = issue.area_id LEFT JOIN unit ON area.unit_id = unit.id');
+      fields.forEach( function(field) {
+        query.addField(field, null, ['grouped']);
+      });
+      general_params.addMemberOptions(req, query, params);
+      general_params.addInitiativeOptions(req, query, params);
+      query.addOrderBy('event.id');
+      general_params.addLimitAndOffset(query, params);
+      db.query(conn, req, res, query, function (events, conn) {
+        var result = { result: events.rows }
+        includes = [];
+        if (params.include_initiatives) includes.push({ class: 'initiative', objects: 'result'});
+        if (params.include_issues) includes.push({ class: 'issue', objects: 'result'});
+        if (params.include_areas) includes.push({ class: 'area', objects: 'issues'});
+        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
+        if (params.include_policies) includes.push({ class: 'policy', objects: 'issues' });
+        addRelatedData(conn, req, res, result, includes);
+      });
     });
-    general_params.addMemberOptions(req, query, params);
-    general_params.addInitiativeOptions(req, query, params);
-    query.addOrderBy('event.id');
-    general_params.addLimitAndOffset(query, params);
-    db.query(conn, req, res, query, function (events, conn) {
-      var result = { result: events.rows }
-      includes = [];
-      if (params.include_initiatives) includes.push({ class: 'initiative', objects: 'result'});
-      if (params.include_issues) includes.push({ class: 'issue', objects: 'result'});
-      if (params.include_areas) includes.push({ class: 'area', objects: 'issues'});
-      if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
-      if (params.include_policies) includes.push({ class: 'policy', objects: 'issues' });
-      addRelatedData(conn, req, res, result, includes);
-    });
-  }); },
+  },
   
   // TODO add interfaces for data structure:
   // ignored_member requireAccessLevel(conn, req, res, 'member');
