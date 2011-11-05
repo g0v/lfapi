@@ -704,7 +704,7 @@ exports.get = {
         case 'half_freeze':
         case 'full_freeze':
           query.from('direct_interest_snapshot', 'interest');
-          query.addWhere('interest.event = ?', params.snapshot);
+          query.addWhere(['interest.event = ?', params.snapshot]);
           break;
           
         case undefined:
