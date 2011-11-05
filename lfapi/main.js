@@ -663,7 +663,7 @@ exports.get = {
           break;
           
         default:
-          respond('json', conn, req, res, 'unprocessable', { error: 'Invalid snapshot type' });
+          respond('json', conn, req, res, 'unprocessable', null, 'Invalid snapshot type');
           return;
 
       };
@@ -708,11 +708,16 @@ exports.get = {
           break;
           
         case undefined:
+          if (! req.current_member_id) {
+            respond('json', conn, req, res, 'unprocessable', null, 'No snapshot type given and not beeing member');
+            return;
+          };
           query.from('interest');
+          query.addWhere(['interest.member_id = ?', req.current_member_id]);
           break;
           
         default:
-          respond('json', conn, req, res, 'unprocessable', { error: 'Invalid snapshot type' });
+          respond('json', conn, req, res, 'unprocessable', null, 'Invalid snapshot type');
           return;
 
       };
