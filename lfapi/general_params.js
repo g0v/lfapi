@@ -31,11 +31,11 @@ exports.addMemberOptions = function (req, query, params, relation) {
   if (member_id) {
     query.addWhere(['"' + table_name + '"."id" IN (??)', member_id.split(',')]);
   };
-  if (member_disabled) {
+  /*if (member_disabled == true) {
     query.addWhere('"' + table_name + '"."active" = FALSE');
   } else {
     query.addWhere('"' + table_name + '"."active" = TRUE OR "' + table_name + '"."active" ISNULL');
-  };
+  };*/
   if (member_search) {
     query.addWhere(['"' + table_name + '"."text_search_data" @@ text_search_query(?)', member_search]);
   };
