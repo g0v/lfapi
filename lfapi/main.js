@@ -647,6 +647,50 @@ exports.get = {
     });
   },
 
+  '/population': function (conn, req, res, params) {
+    requireAccessLevel(conn, req, res, 'pseudonym', function() {
+      var query = new selector.Selector();
+      query.from('direct_population_snapshot', 'population');
+      switch (params.snapshot) {
+        case 'latest':
+          query.addWhere('population.event = issue.latest_snapshot_event');
+          break;
+          
+        case 'end_of_admission':
+        case 'half_freeze':
+        case 'full_freeze':
+          query.addWhere(['population.event = ?', params.snapshot]);
+          break;
+          
+        default:
+          respond('json', conn, req, res, 'unprocessable', { error: 'Invalid snapshot type' });
+          return;
+
+      };
+      query.addField('population.*');
+      query.join('member', null, 'member.id = population.member_id');
+      query.join('issue', null, 'population.issue_id = issue.id');
+      query.join('policy', null, 'policy.id = issue.policy_id');
+      query.join('area', null, 'area.id = issue.area_id');
+      query.join('unit', null, 'area.unit_id = unit.id');
+      general_params.addMemberOptions(req, query, params);
+      general_params.addIssueOptions(req, query, params);
+      query.addOrderBy('population.issue_id, population.member_id');
+      general_params.addLimitAndOffset(query, params);
+      db.query(conn, req, res, query, function (population_result, conn) {
+        console.log(population_result);
+        var result = { result: population_result.rows }
+        includes = [];
+        if (params.include_members) includes.push({ class: 'member', objects: 'result'});
+        if (params.include_issues) includes.push({ class: 'issue', objects: 'result'});
+        if (params.include_areas) includes.push({ class: 'area', objects: 'areas'});
+        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
+        if (params.include_policies) includes.push({ class: 'policy', objects: 'issues' });
+        addRelatedData(conn, req, res, result, includes);
+      });
+    });
+  },
+  
   '/interest': function (conn, req, res, params) {
     requireAccessLevel(conn, req, res, 'pseudonym', function() {
       var query = new selector.Selector();
