@@ -19,9 +19,8 @@ exports.addLimitAndOffset = function (query, params) {
 // TODO limit to access privileges
 exports.addMemberOptions = function (req, query, params, relation) {
   var table_name = 'member';
-  if (relation) {
-    table_name = relation + '_member';
-  };
+  if (relation) table_name = relation + '_member';
+
   var member_id = params[relation ? relation + '_member_id' : 'member_id'];
   var member_disabled = params[relation ? relation + '_member_disabled' : 'member_disabled'] ? true : false;
   var member_search = params[relation ? relation + '_member_search' : 'member_search'];
@@ -31,11 +30,11 @@ exports.addMemberOptions = function (req, query, params, relation) {
   if (member_id) {
     query.addWhere(['"' + table_name + '"."id" IN (??)', member_id.split(',')]);
   };
-  /*if (member_disabled == true) {
+  if (member_disabled == 'only') {
     query.addWhere('"' + table_name + '"."active" = FALSE');
-  } else {
+  } else if (member_disabled != 'include') {
     query.addWhere('"' + table_name + '"."active" = TRUE OR "' + table_name + '"."active" ISNULL');
-  };*/
+  };
   if (member_search) {
     query.addWhere(['"' + table_name + '"."text_search_data" @@ text_search_query(?)', member_search]);
   };
@@ -65,12 +64,12 @@ exports.addUnitOptions = function (req, query, params) {
   if (params.unit_parent_id) {
     query.addWhere(['"unit"."parent_id" = ?', params.unit_parent_id]);
   }
-  if (params.unit_without_parent) {
+  if (params.unit_without_parent == '1') {
     query.addWhere('"unit"."parent_id" ISNULL');
   }
-  if (params.unit_disabled) {
+  if (params.unit_disabled == 'only') {
     query.addWhere('"unit"."active" = FALSE');
-  } else {
+  } else if (params.unit_disabled != 'include') {
     query.addWhere('"unit"."active" = TRUE');
   }
   if (params.unit_order_by_name) {
@@ -84,9 +83,9 @@ exports.addAreaOptions = function (req, query, params) {
   if (params.area_id) {
     query.addWhere(['"area"."id" IN (??)', params.area_id.split(',')]);
   }
-  if (params.area_disabled) {
+  if (params.area_disabled == 'only') {
     query.addWhere('"area"."active" = FALSE');
-  } else {
+  } else if (params.area_disabled == 'include') {
     query.addWhere('"area"."active" = TRUE');
   }
   if (req.current_access_level == 'member' && params.area_my) {
@@ -116,12 +115,20 @@ exports.addIssueOptions = function (req, query, params) {
     query.addWhere(['"issue"."state" IN (??)', issue_states]);
   };
   
-  if (params.issue_accepted) query.addWhere('"issue"."accepted" NOTNULL');
-  if (params.issue_half_frozen) query.addWhere('"issue"."half_frozen" NOTNULL');
-  if (params.issue_fully_frozen) query.addWhere('"issue"."fully_frozen" NOTNULL');
-  if (params.issue_closed) query.addWhere('"issue"."closed" NOTNULL');
-  if (params.issue_cleaned) query.addWhere('"issue"."cleaned" NOTNULL');
-  
+  if (params.issue_accepted == '1') query.addWhere('"issue"."accepted" NOTNULL');
+  if (params.issue_accepted == '0') query.addWhere('"issue"."accepted" ISNULL');
+  if (params.issue_half_frozen == '1') query.addWhere('"issue"."half_frozen" NOTNULL');
+  if (params.issue_half_frozen == '0') query.addWhere('"issue"."half_frozen" ISNULL');
+  if (params.issue_fully_frozen == '1') query.addWhere('"issue"."fully_frozen" NOTNULL');
+  if (params.issue_fully_frozen == '0') query.addWhere('"issue"."fully_frozen" ISNULL');
+  if (params.issue_closed == '1') query.addWhere('"issue"."closed" NOTNULL');
+  if (params.issue_closed == '0') query.addWhere('"issue"."closed" ISNULL');
+  if (params.issue_cleaned == '1') query.addWhere('"issue"."cleaned" NOTNULL');
+  if (params.issue_cleaned == '0') query.addWhere('"issue"."cleaned" ISNULL');
+
+  if (params.issue_ranks_available == '1') query.addWhere('"issue"."ranks_available"');
+  if (params.issue_ranks_available == '0') query.addWhere('NOT "issue"."ranks_available"');
+
   if (params.issue_created_after) query.addWhere(['"issue"."created" >= ?', params.issue_created_after]);
   if (params.issue_created_before) query.addWhere(['"issue"."created" < ?', params.issue_created_before]);
   if (params.issue_accepted_after) query.addWhere(['"issue"."accepted" >= ?', params.issue_accepted_after]);
@@ -158,13 +165,16 @@ exports.addInitiativeOptions = function (req, query, params) {
   //exports.addMemberOptions(query, params, 'initiator');
   //exports.addMemberOptions(query, params, 'supporter');
   
-  if (params.initiative_revoked) query.addWhere('initiative.revoked NOTNULL');
+  if (params.initiative_revoked == '1') query.addWhere('initiative.revoked NOTNULL');
+  if (params.initiative_revoked == '0') query.addWhere('initiative.revoked ISNULL');
   if (params.initiative_revoked_after) query.addWhere(['initiative.revoked >= ?', params.initiative_revoked_after]);
   if (params.initiative_revoked_before) query.addWhere(['initiative.revoked < ?', params.initiative_revoked_before]);
+  // TODO check accesslevel
   if (params.initiative_revoked_by_member_id) query.addWhere(['initiative.revoked_by_member_id = ?', params.initiative_revoked_by_member_id]);
   if (params.initiative_suggested_initiative_id) query.addWhere(['initiative.suggested_initiative_id = ?', params.initiative_suggested_initiative_id]);
 
-  if (params.initiative_admitted) query.addWhere('initiative.admitted NOTNULL');
+  if (params.initiative_admitted == '1') query.addWhere('initiative.admitted NOTNULL');
+  if (params.initiative_admitted == '0') query.addWhere('initiative.admitted ISNULL');
   if (params.initiative_created_after) query.addWhere(['initiative.created >= ?', params.initiative_created_after]);
   if (params.initiative_created_before) query.addWhere(['initiative.created < ?',params.initiative_created_before]);
   if (params.initiative_admitted_after) query.addWhere(['initiative.admitted >= ?', params.initiative_admitted_after]);
@@ -173,15 +183,20 @@ exports.addInitiativeOptions = function (req, query, params) {
   if (params.initiative_supporter_count_below) query.addWhere(['initiative.supporter_count < ?', params.initiative_supporter_count_below]);
   if (params.initiative_supporter_count_above) query.addWhere(['initiative.supporter_count >= ?', params.initiative_supporter_count_above]);
 
-  if (params.initiative_attainable) query.addWhere('initiative.attainable');
-  if (params.initiative_favored) query.addWhere('initiative.favored');
-  if (params.initiative_unfavored) query.addWhere('initiative.unfavored');
+  if (params.initiative_attainable == '1') query.addWhere('initiative.attainable');
+  if (params.initiative_attainable == '0') query.addWhere('NOT initiative.attainable');
+  if (params.initiative_favored == '1') query.addWhere('initiative.favored');
+  if (params.initiative_favored == '0') query.addWhere('NOT initiative.favored');
+  if (params.initiative_unfavored == '1') query.addWhere('initiative.unfavored');
+  if (params.initiative_unfavored == '0') query.addWhere('NOT initiative.unfavored');
 
   if (params.initiative_max_preliminary_rank) query.addWhere(['initiative.preliminary_rank <= ?', params.initiative_max_preliminary_rank]);
   if (params.initiative_max_final_rank) query.addWhere(['initiative.preliminary_rank <= ?', params.initiative_max_final_rank]);
 
-  if (params.initiative_disqualified) query.addWhere('initiative.disqualified');
-  if (params.initiative_winner) query.addWhere('initiative.winner');
+  if (params.initiative_disqualified == '1') query.addWhere('initiative.disqualified');
+  if (params.initiative_disqualified == '0') query.addWhere('NOT initiative.disqualified');
+  if (params.initiative_winner == '1') query.addWhere('initiative.winner');
+  if (params.initiative_winner == '0') query.addWhere('NOT initiative.winner');
 
   if (params.initiative_search) {
     query.addWhere(['initiative.text_search_data @@ text_search_query(?)', params.initiative_search]);
