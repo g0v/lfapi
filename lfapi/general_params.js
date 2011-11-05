@@ -16,6 +16,7 @@ exports.addLimitAndOffset = function (query, params) {
 }
 
 // add member related options to a db query according to parameters given by client
+// TODO limit to access privileges
 exports.addMemberOptions = function (req, query, params, relation) {
   var table_name = 'member';
   if (relation) {
