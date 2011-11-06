@@ -1256,7 +1256,7 @@ Your LiquidFeedback maintainers",
     query.from('member');
     query.join('member_application', null, 'member_application.member_id = member.id');
     query.addField('member.id');
-    query.addWhere(['member.active AND member_application.key = ?', key]);
+    query.addWhere(['member.activated AND member_application.key = ?', key]);
     if (params.interactive) {
       query.forUpdateOf('member');
     }
