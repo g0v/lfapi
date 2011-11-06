@@ -704,33 +704,42 @@ exports.get = {
   '/interest': function (conn, req, res, params) {
     requireAccessLevel(conn, req, res, 'pseudonym', function() {
       var query = new selector.Selector();
-      switch (params.snapshot) {
-        case 'latest':
+      if (params.snapshot) {
+        if (params.delegating == '1') {
+          query.from('delegating_interest_snapshot', 'interest');
+          if (params.delegate_member_id) {
+            query.addWhere(['interest.delegate_member_ids @> array[?::int]', params.delegate_member_id]);
+          }
+          if (params.direct_delegate_member_id) {
+            query.addWhere(['interest.delegate_member_ids[1] = ?', params.direct_delegate_member_id]);
+          }
+        } else {
           query.from('direct_interest_snapshot', 'interest');
-          query.addWhere('interest.event = issue.latest_snapshot_event');
-          break;
-          
-        case 'end_of_admission':
-        case 'half_freeze':
-        case 'full_freeze':
-          query.from('direct_interest_snapshot', 'interest');
-          query.addWhere(['interest.event = ?', params.snapshot]);
-          break;
-          
-        case undefined:
-          if (! req.current_member_id) {
-            respond('json', conn, req, res, 'unprocessable', null, 'No snapshot type given and not beeing member');
+        }
+        switch (params.snapshot) {
+          case 'latest':
+            query.addWhere('interest.event = issue.latest_snapshot_event');
+            break;
+            
+          case 'end_of_admission':
+          case 'half_freeze':
+          case 'full_freeze':
+            query.addWhere(['interest.event = ?', params.snapshot]);
+            break;
+            
+          default:
+            respond('json', conn, req, res, 'unprocessable', null, 'Invalid snapshot type');
             return;
-          };
-          query.from('interest');
-          query.addWhere(['interest.member_id = ?', req.current_member_id]);
-          break;
-          
-        default:
-          respond('json', conn, req, res, 'unprocessable', null, 'Invalid snapshot type');
-          return;
 
-      };
+        };
+      } else {
+        if (! req.current_member_id) {
+          respond('json', conn, req, res, 'unprocessable', null, 'No snapshot type given and not beeing member');
+          return;
+        };
+        query.from('interest');
+        query.addWhere(['interest.member_id = ?', req.current_member_id]);
+      }
       query.addField('interest.*');
       query.join('member', null, 'member.id = interest.member_id');
       query.join('issue', null, 'interest.issue_id = issue.id');
