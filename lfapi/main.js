@@ -650,7 +650,17 @@ exports.get = {
   '/population': function (conn, req, res, params) {
     requireAccessLevel(conn, req, res, 'pseudonym', function() {
       var query = new selector.Selector();
-      query.from('direct_population_snapshot', 'population');
+      if (params.delegating == '1') {
+        query.from('delegating_population_snapshot', 'population');
+        if (params.delegate_member_id) {
+          query.addWhere(['population.delegate_member_ids @> array[?::int]', params.delegate_member_id]);
+        }
+        if (params.direct_delegate_member_id) {
+          query.addWhere(['population.delegate_member_ids[1] = ?', params.direct_delegate_member_id]);
+        }
+      } else {
+        query.from('direct_population_snapshot', 'population');
+      }
       switch (params.snapshot) {
         case 'latest':
           query.addWhere('population.event = issue.latest_snapshot_event');
