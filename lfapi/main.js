@@ -688,7 +688,6 @@ exports.get = {
       query.addOrderBy('population.issue_id, population.member_id');
       general_params.addLimitAndOffset(query, params);
       db.query(conn, req, res, query, function (population_result, conn) {
-        console.log(population_result);
         var result = { result: population_result.rows }
         includes = [];
         if (params.include_members) includes.push({ class: 'member', objects: 'result'});
@@ -838,9 +837,10 @@ exports.get = {
       if (params.snapshot) {
 
         query.from('direct_supporter_snapshot', 'supporter');
+        query.join('initiative', null, 'initiative.id = supporter.initiative_id JOIN issue ON issue.id = initiative.issue_id JOIN policy ON policy.id = issue.policy_id JOIN area ON area.id = issue.area_id JOIN unit ON area.unit_id = unit.id');
 
         if (params.delegating == '1') {
-          query.join('delegating_interest_snapshot', 'interest', 'interest.issue_id = supporter.issue_id AND interest.delegate_member_ids @> array[supporter.member_id::int] AND interest.event = supporter.event');
+          query.join('delegating_interest_snapshot', 'interest', 'interest.issue_id = initiative.issue_id AND interest.delegate_member_ids @> array[supporter.member_id::int] AND interest.event = supporter.event');
           query.join('member', null, 'member.id = interest.member_id');
           if (params.delegate_member_id) {
             query.addWhere(['interest.delegate_member_ids @> array[?::int]', params.delegate_member_id]);
@@ -849,7 +849,7 @@ exports.get = {
             query.addWhere(['interest.delegate_member_ids[1] = ?', params.direct_delegate_member_id]);
           }
         } else {
-          query.join('direct_interest_snapshot', 'interest', 'interest.issue_id = supporter.issue_id AND interest.member_id = supporter.member_id AND interest.event = supporter.event');
+          query.join('direct_interest_snapshot', 'interest', 'interest.issue_id = initiative.issue_id AND interest.member_id = supporter.member_id AND interest.event = supporter.event');
           query.join('member', null, 'member.id = supporter.member_id');
           query.addField('supporter.informed, supporter.satisfied');
         }
@@ -884,7 +884,6 @@ exports.get = {
         query.addField('supporter.*');
         query.addWhere(['supporter.member_id = ?', req.current_member_id]);
       }
-      query.join('initiative', null, 'initiative.id = supporter.initiative_id JOIN issue ON issue.id = initiative.issue_id JOIN policy ON policy.id = issue.policy_id JOIN area ON area.id = issue.area_id JOIN unit ON area.unit_id = unit.id');
       general_params.addMemberOptions(req, query, params);
       general_params.addInitiativeOptions(req, query, params);
       query.addOrderBy('supporter.issue_id, supporter.initiative_id, supporter.member_id');
