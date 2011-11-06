@@ -849,6 +849,7 @@ exports.get = {
           }
         } else {
           query.join('direct_interest_snapshot', 'interest', 'interest.issue_id = supporter.issue_id AND interest.member_id = supporter.member_id AND interest.event = supporter.event');
+          query.addField('supporter.informed, supporter.satisfied');
         }
 
         query.addField('interest.*')
@@ -888,6 +889,7 @@ exports.get = {
       db.query(conn, req, res, query, function (supporter, conn) {
         var result = { result: supporter.rows }
         includes = [];
+        if (params.include_members) includes.push({ class: 'member', objects: 'result'});
         if (params.include_initiatives) includes.push({ class: 'initiative', objects: 'result'});
         if (params.include_issues) includes.push({ class: 'issue', objects: 'initiatives'});
         if (params.include_areas) includes.push({ class: 'area', objects: 'issues'});
