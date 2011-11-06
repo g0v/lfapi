@@ -834,13 +834,53 @@ exports.get = {
 
   '/supporter': function (conn, req, res, params) {
     requireAccessLevel(conn, req, res, 'pseudonym', function() {
-      var fields = ['supporter.issue_id', 'supporter.initiative_id', 'supporter.member_id', 'supporter.draft_id'];
       var query = new selector.Selector();
-      query.from('supporter')
+      if (params.snapshot) {
+
+        query.from('direct_supporter_snapshot', 'supporter');
+
+        if (params.delegating == '1') {
+          query.join('delegating_interest_snapshot', 'interest', 'interest.issue_id = supporter.issue_id AND interest.delegate_member_ids @> ARRAY[supporter.member_id] AND interest.event = supporter.event');
+          if (params.delegate_member_id) {
+            query.addWhere(['interest.delegate_member_ids @> array[?::int]', params.delegate_member_id]);
+          }
+          if (params.direct_delegate_member_id) {
+            query.addWhere(['interest.delegate_member_ids[1] = ?', params.direct_delegate_member_id]);
+          }
+        } else {
+          query.join('direct_interest_snapshot', 'interest', 'interest.issue_id = supporter.issue_id AND interest.member_id = supporter.member_id AND interest.event = supporter.event');
+        }
+
+        query.addField('interest.*')
+        query.addField('supporter.initiative_id');
+        
+        switch (params.snapshot) {
+          case 'latest':
+            query.addWhere('supporter.event = issue.latest_snapshot_event');
+            break;
+            
+          case 'end_of_admission':
+          case 'half_freeze':
+          case 'full_freeze':
+            query.addWhere(['supporter.event = ?', params.snapshot]);
+            break;
+            
+          default:
+            respond('json', conn, req, res, 'unprocessable', null, 'Invalid snapshot type');
+            return;
+
+        };
+        
+      } else {
+        if (! req.current_member_id) {
+          respond('json', conn, req, res, 'unprocessable', null, 'No snapshot type given and not beeing member');
+          return;
+        };
+        query.from('supporter')
+        query.addField('supporter.*');
+        query.addWhere(['supporter.member_id = ?', req.current_member_id]);
+      }
       query.join('member', null, 'member.id = supporter.member_id JOIN initiative ON initiative.id = supporter.initiative_id JOIN issue ON issue.id = initiative.issue_id JOIN policy ON policy.id = issue.policy_id JOIN area ON area.id = issue.area_id JOIN unit ON area.unit_id = unit.id');
-      fields.forEach( function(field) {
-        query.addField(field, null, ['grouped']);
-      });
       general_params.addMemberOptions(req, query, params);
       general_params.addInitiativeOptions(req, query, params);
       query.addOrderBy('supporter.issue_id, supporter.initiative_id, supporter.member_id');
