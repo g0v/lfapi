@@ -30,10 +30,10 @@ exports.addMemberOptions = function (req, query, params, relation) {
   if (member_id) {
     query.addWhere(['"' + table_name + '"."id" IN (??)', member_id.split(',')]);
   };
-  if (member_disabled == 'only') {
-    query.addWhere('"' + table_name + '"."active" = FALSE');
-  } else if (member_disabled != 'include') {
+  if (member_active == '1') {
     query.addWhere('"' + table_name + '"."active" = TRUE OR "' + table_name + '"."active" ISNULL');
+  } else if (member_active == '0') {
+    query.addWhere('"' + table_name + '"."active" = FALSE');
   };
   if (member_search) {
     query.addWhere(['"' + table_name + '"."text_search_data" @@ text_search_query(?)', member_search]);
