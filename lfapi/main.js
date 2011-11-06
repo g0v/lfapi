@@ -840,7 +840,8 @@ exports.get = {
         query.from('direct_supporter_snapshot', 'supporter');
 
         if (params.delegating == '1') {
-          query.join('delegating_interest_snapshot', 'interest', 'interest.issue_id = supporter.issue_id AND interest.delegate_member_ids @> ARRAY[supporter.member_id] AND interest.event = supporter.event');
+          query.join('delegating_interest_snapshot', 'interest', 'interest.issue_id = supporter.issue_id AND interest.delegate_member_ids @> array[supporter.member_id::int] AND interest.event = supporter.event');
+          query.join('member', null, 'member.id = interest.member_id');
           if (params.delegate_member_id) {
             query.addWhere(['interest.delegate_member_ids @> array[?::int]', params.delegate_member_id]);
           }
@@ -849,6 +850,7 @@ exports.get = {
           }
         } else {
           query.join('direct_interest_snapshot', 'interest', 'interest.issue_id = supporter.issue_id AND interest.member_id = supporter.member_id AND interest.event = supporter.event');
+          query.join('member', null, 'member.id = supporter.member_id');
           query.addField('supporter.informed, supporter.satisfied');
         }
 
@@ -878,10 +880,11 @@ exports.get = {
           return;
         };
         query.from('supporter')
+        query.join('member', null, 'member.id = supporter.member_id');
         query.addField('supporter.*');
         query.addWhere(['supporter.member_id = ?', req.current_member_id]);
       }
-      query.join('member', null, 'member.id = supporter.member_id JOIN initiative ON initiative.id = supporter.initiative_id JOIN issue ON issue.id = initiative.issue_id JOIN policy ON policy.id = issue.policy_id JOIN area ON area.id = issue.area_id JOIN unit ON area.unit_id = unit.id');
+      query.join('initiative', null, 'initiative.id = supporter.initiative_id JOIN issue ON issue.id = initiative.issue_id JOIN policy ON policy.id = issue.policy_id JOIN area ON area.id = issue.area_id JOIN unit ON area.unit_id = unit.id');
       general_params.addMemberOptions(req, query, params);
       general_params.addInitiativeOptions(req, query, params);
       query.addOrderBy('supporter.issue_id, supporter.initiative_id, supporter.member_id');
