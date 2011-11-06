@@ -22,7 +22,7 @@ exports.addMemberOptions = function (req, query, params, relation) {
   if (relation) table_name = relation + '_member';
 
   var member_id = params[relation ? relation + '_member_id' : 'member_id'];
-  var member_disabled = params[relation ? relation + '_member_disabled' : 'member_disabled'] ? true : false;
+  var member_active = params[relation ? relation + '_member_active' : 'member_active'] ? true : false;
   var member_search = params[relation ? relation + '_member_search' : 'member_search'];
   var member_order_by_name = parseInt(params[relation ? relation + '_member_order_by_name' : 'member_order_by_name']);
   var member_order_by_created = parseInt(params[relation ? relation + '_member_order_by_created' : 'member_order_by_created']);
