@@ -13,10 +13,10 @@ exports.suggestion = ['initiative_id', 'id', 'created', 'author_id', 'name', 'fo
 exports.suggestion_pseudonym = ['initiative_id', 'id', 'created', 'name', 'description', 'minus2_unfulfilled_count', 'minus2_fulfilled_count', 'minus1_unfulfilled_count', 'minus1_fulfilled_count', 'plus1_unfulfilled_count', 'plus1_fulfilled_count', 'plus2_unfulfilled_count', 'plus2_fulfilled_count'];
 
 // add fields of a data structure to where AND group by clause of a query
-exports.addObjectFields = function (query, class, field_class) {
-  if (!field_class) { field_class = class };
+exports.addObjectFields = function (query, clazz, field_class) {
+  if (!field_class) { field_class = clazz };
   exports[field_class].forEach(function(field) {
-    query.addField('"' + class + '"."' + field + '"', null, ['grouped']);
-    //query.addGroupBy('"' + class + '"."' + '"' + field + '"');
+    query.addField('"' + clazz + '"."' + field + '"', null, ['grouped']);
+    //query.addGroupBy('"' + clazz + '"."' + '"' + field + '"');
   });
 };

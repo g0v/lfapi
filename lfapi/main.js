@@ -128,7 +128,7 @@ db.error_handler = respond;
 function addRelatedData(conn, req, res, result, includes) {
   if (includes.length > 0) {
     var include = includes.shift();
-    var class = include.class;
+    var clazz = include.clazz;
     var objects = result[include.objects];
 
     var query;
@@ -140,8 +140,8 @@ function addRelatedData(conn, req, res, result, includes) {
         if (objects.length > 0) {
           objects_exists = true;
           objects.forEach( function(object) {
-            if (object[class + "_id"]) {
-              ids_hash[object[class + "_id"]] = true;
+            if (object[clazz + "_id"]) {
+              ids_hash[object[clazz + "_id"]] = true;
             };
           });
         }
@@ -149,8 +149,8 @@ function addRelatedData(conn, req, res, result, includes) {
         for (var key in objects) {
           objects_exists = true;
           var object = objects[key];
-          if (object[class + "_id"]) {
-            ids_hash[object[class + "_id"]] = true;
+          if (object[clazz + "_id"]) {
+            ids_hash[object[clazz + "_id"]] = true;
           };
         };
       };
@@ -162,9 +162,9 @@ function addRelatedData(conn, req, res, result, includes) {
         }
         if (ids.length > 0) {
           query = new selector.Selector();
-          query.from(class);
-          query.addWhere([class + '.id IN (??)', ids]);
-          fields.addObjectFields(query, class);
+          query.from(clazz);
+          query.addWhere([clazz + '.id IN (??)', ids]);
+          fields.addObjectFields(query, clazz);
         }
       };
     };
@@ -178,10 +178,10 @@ function addRelatedData(conn, req, res, result, includes) {
         });
       };
              
-      if (class == 'policy') {
+      if (clazz == 'policy') {
         result['policies'] = tmp;
       } else {
-        result[class + 's'] = tmp;
+        result[clazz + 's'] = tmp;
       }
       addRelatedData(conn, req, res, result, includes);
     });
@@ -820,6 +820,7 @@ exports.get = {
       db.query(conn, req, res, query, function (initiator, conn) {
         var result = { result: initiator.rows }
         includes = [];
+        if (params.include_members) includes.push({ class: 'member', objects: 'result'});
         if (params.include_initiatives) includes.push({ class: 'initiative', objects: 'result'});
         if (params.include_issues) includes.push({ class: 'issue', objects: 'initiatives'});
         if (params.include_areas) includes.push({ class: 'area', objects: 'issues'});
