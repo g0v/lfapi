@@ -16,15 +16,15 @@ exports.bind_port = 25520;
 exports.public_access_level = 'full';
 
 // connection string to access the LiquidFeedback Core database
-exports.connectionString = 'pg://localhost/liquid_feedback';
+exports.connectionString = 'pg://localhost/liquid_feedback2';
 
 // public base url (including trailing slash)
-exports.public_url_path = 'http://lf.example.org/api/';
+exports.public_url_path = 'http://apitest.liquidfeedback.org:25520/';
 
 // mail server, email sender and subject settings
 exports.mail = {
-  from:                'Sender name <senderaddress@example.org>',
-  subject_prefix:      '[email subject prefix] '
+  from:                'LiquidFeedback Maintainers <lqfb-maintainers@public-software-group.org>',
+  subject_prefix:      '[lfapi alpha] '
 };
 
 exports.settings = {

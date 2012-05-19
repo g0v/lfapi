@@ -99,6 +99,7 @@ function respond(mode, conn, req, res, status, object, err) {
           http_status, 
           {
             'Content-Type': content_type,
+            'Access-Control-Allow-Origin': '*'
             //'Content-Length': body.length // TODO doesn't work in chrome with JSONP
           }
         );
@@ -331,13 +332,15 @@ exports.get = {
     var html = [];
     html.push('<h2>welcome to lfapi public developer alpha test</h2>');
     html.push('<p>This service is provided for testing purposes and is <i><b>dedicated to developers interested in creating applications</b></i> based on LiquidFeedback.</p>');
+    html.push('<h2>developer registration</h2>');
+    html.push('<p>To register as developer and receive an account, please send an email to beta20120312@public-software-group.org and you\'ll receive an invitation to the testing system. Read access is available without registering an account.</p>');
     html.push('<h2>how to use</h2>');
     html.push('<p>The programming interface is described in the <a href="http://dev.liquidfeedback.org/trac/lf/wiki/API">LiquidFeedback API specification</a>.</p>')
     html.push('<p>The current implementation status of lfapi is published at the <a href="http://dev.liquidfeedback.org/trac/lf/wiki/lfapi">LiquidFeedback API server</a> page in our Wiki.</p>');
     html.push('<p><b><i>Neither the API specification nor the implementation of lfapi is finished yet.</i></b> This public test should enable developers to join the specification process of the programming interface and makes it possible to start creating applications.</p>');
     html.push('<h2>questions and suggestions</h2>');
     html.push('<p>Please use our <a href="http://dev.liquidfeedback.org/cgi-bin/mailman/listinfo/main">public mailing list</a> if you have any questions or suggestions.</p>');
-    html.push('<h2>developer registration</h2>');
+/*
     html.push('<p>To register as developer and receive an account, please submit the following form. You\'ll receive an email with instructions to complete the registration process by verifying your email address.<br />');
     html.push('<form action="register_test" method="POST">');
     html.push('<label for="name">Your name:</label> <input type="text" id="name" name="name" /> &nbsp; &nbsp; ');
@@ -353,6 +356,7 @@ exports.get = {
     html.push('</div>');
     html.push('<br />');
     html.push('<input type="submit" value="Register account" />');
+*/
     respond('html', null, req, res, 'ok', html.join(''));
   },
   
@@ -483,7 +487,7 @@ exports.get = {
       db.query(conn, req, res, query, function (member_history_result, conn) {
         var result = { result: member_history_result.rows }
         includes = [];
-        if (params.include_members) includes.push({ class: 'member', objects: 'result'});
+        if (params.include_members) includes.push({ clazz: 'member', objects: 'result'});
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -493,8 +497,17 @@ exports.get = {
     requireAccessLevel(conn, req, res, 'full', function() {
       var query = new selector.Selector();
       query.from('"member_image" JOIN "member" ON "member"."id" = "member_image"."member_id"');
-      query.addField('"member_image".*');
+      query.addField('"member_image"."member_id"');
+      query.addField('"member_image"."image_type"');
+      query.addField('"member_image"."scaled"');
+      query.addField('"member_image"."content_type"');
+      query.addField('encode("member_image"."data", \'base64\')', 'data');
       query.addWhere('member_image.scaled');
+      if (params.type == "avatar") {
+        query.addWhere('member_image.image_type = \'avatar\'');
+      } else if (params.type == "photo") {
+        query.addWhere('member_image.image_type = \'photo\'');
+      }
       general_params.addMemberOptions(req, query, params);
       query.addOrderBy = ['member_image.member_id, member_image.image_type'];
       db.query(conn, req, res, query, function (result, conn) {
@@ -536,8 +549,8 @@ exports.get = {
       db.query(conn, req, res, query, function (privilege_result, conn) {
         var result = { result: privilege_result.rows }
         includes = [];
-        if (params.include_units) includes.push({ class: 'unit', objects: 'result'});
-        if (params.include_members) includes.push({ class: 'member', objects: 'result'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'result'});
+        if (params.include_members) includes.push({ clazz: 'member', objects: 'result'});
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -582,7 +595,7 @@ exports.get = {
       db.query(conn, req, res, query, function (area_result, conn) {
         var result = { result: area_result.rows }
         includes = [];
-        if (params.include_units) includes.push({ class: 'unit', objects: 'result'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'result'});
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -601,9 +614,9 @@ exports.get = {
     db.query(conn, req, res, query, function (allowed_policy_result, conn) {
       var result = { result: allowed_policy_result.rows }
       includes = [];
-      if (params.include_policies) includes.push({ class: 'policy', objects: 'result'});
-      if (params.include_areas) includes.push({ class: 'area', objects: 'result'});
-      if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
+      if (params.include_policies) includes.push({ clazz: 'policy', objects: 'result'});
+      if (params.include_areas) includes.push({ clazz: 'area', objects: 'result'});
+      if (params.include_units) includes.push({ clazz: 'unit', objects: 'areas'});
       addRelatedData(conn, req, res, result, includes);
     });
   }); },
@@ -620,9 +633,9 @@ exports.get = {
       db.query(conn, req, res, query, function (membership_result, conn) {
         var result = { result: membership_result.rows }
         includes = [];
-        if (params.include_members) includes.push({ class: 'member', objects: 'result'});
-        if (params.include_areas) includes.push({ class: 'area', objects: 'result'});
-        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
+        if (params.include_members) includes.push({ clazz: 'member', objects: 'result'});
+        if (params.include_areas) includes.push({ clazz: 'area', objects: 'result'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'areas'});
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -639,9 +652,9 @@ exports.get = {
       db.query(conn, req, res, query, function (issue_result, conn) {
         var result = { result: issue_result.rows }
         includes = [];
-        if (params.include_areas) includes.push({ class: 'area', objects: 'result'});
-        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
-        if (params.include_policies) includes.push({ class: 'policy', objects: 'result' });
+        if (params.include_areas) includes.push({ clazz: 'area', objects: 'result'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'areas'});
+        if (params.include_policies) includes.push({ clazz: 'policy', objects: 'result' });
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -690,11 +703,11 @@ exports.get = {
       db.query(conn, req, res, query, function (population_result, conn) {
         var result = { result: population_result.rows }
         includes = [];
-        if (params.include_members) includes.push({ class: 'member', objects: 'result'});
-        if (params.include_issues) includes.push({ class: 'issue', objects: 'result'});
-        if (params.include_areas) includes.push({ class: 'area', objects: 'areas'});
-        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
-        if (params.include_policies) includes.push({ class: 'policy', objects: 'issues' });
+        if (params.include_members) includes.push({ clazz: 'member', objects: 'result'});
+        if (params.include_issues) includes.push({ clazz: 'issue', objects: 'result'});
+        if (params.include_areas) includes.push({ clazz: 'area', objects: 'areas'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'areas'});
+        if (params.include_policies) includes.push({ clazz: 'policy', objects: 'issues' });
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -752,11 +765,11 @@ exports.get = {
       db.query(conn, req, res, query, function (interest_result, conn) {
         var result = { result: interest_result.rows }
         includes = [];
-        if (params.include_members) includes.push({ class: 'member', objects: 'result'});
-        if (params.include_issues) includes.push({ class: 'issue', objects: 'result'});
-        if (params.include_areas) includes.push({ class: 'area', objects: 'issues'});
-        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
-        if (params.include_policies) includes.push({ class: 'policy', objects: 'issues' });
+        if (params.include_members) includes.push({ clazz: 'member', objects: 'result'});
+        if (params.include_issues) includes.push({ clazz: 'issue', objects: 'result'});
+        if (params.include_areas) includes.push({ clazz: 'area', objects: 'issues'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'areas'});
+        if (params.include_policies) includes.push({ clazz: 'policy', objects: 'issues' });
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -774,11 +787,11 @@ exports.get = {
       db.query(conn, req, res, query, function (issue_comment_result, conn) {
         var result = { result: issue_comment_result.rows }
         includes = [];
-        if (params.include_members) includes.push({ class: 'member', objects: 'result'});
-        if (params.include_issues) includes.push({ class: 'issue', objects: 'result'});
-        if (params.include_areas) includes.push({ class: 'area', objects: 'issues'});
-        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
-        if (params.include_policies) includes.push({ class: 'policy', objects: 'issues' });
+        if (params.include_members) includes.push({ clazz: 'member', objects: 'result'});
+        if (params.include_issues) includes.push({ clazz: 'issue', objects: 'result'});
+        if (params.include_areas) includes.push({ clazz: 'area', objects: 'issues'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'areas'});
+        if (params.include_policies) includes.push({ clazz: 'policy', objects: 'issues' });
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -795,10 +808,10 @@ exports.get = {
       db.query(conn, req, res, query, function (initiative_result, conn) {
         var result = { result: initiative_result.rows }
         includes = [];
-        if (params.include_issues) includes.push({ class: 'issue', objects: 'result'});
-        if (params.include_areas) includes.push({ class: 'area', objects: 'issues'});
-        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
-        if (params.include_policies) includes.push({ class: 'policy', objects: 'issues' });
+        if (params.include_issues) includes.push({ clazz: 'issue', objects: 'result'});
+        if (params.include_areas) includes.push({ clazz: 'area', objects: 'issues'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'areas'});
+        if (params.include_policies) includes.push({ clazz: 'policy', objects: 'issues' });
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -820,12 +833,12 @@ exports.get = {
       db.query(conn, req, res, query, function (initiator, conn) {
         var result = { result: initiator.rows }
         includes = [];
-        if (params.include_members) includes.push({ class: 'member', objects: 'result'});
-        if (params.include_initiatives) includes.push({ class: 'initiative', objects: 'result'});
-        if (params.include_issues) includes.push({ class: 'issue', objects: 'initiatives'});
-        if (params.include_areas) includes.push({ class: 'area', objects: 'issues'});
-        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
-        if (params.include_policies) includes.push({ class: 'policy', objects: 'issues' });
+        if (params.include_members) includes.push({ clazz: 'member', objects: 'result'});
+        if (params.include_initiatives) includes.push({ clazz: 'initiative', objects: 'result'});
+        if (params.include_issues) includes.push({ clazz: 'issue', objects: 'initiatives'});
+        if (params.include_areas) includes.push({ clazz: 'area', objects: 'issues'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'areas'});
+        if (params.include_policies) includes.push({ clazz: 'policy', objects: 'issues' });
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -892,12 +905,12 @@ exports.get = {
       db.query(conn, req, res, query, function (supporter, conn) {
         var result = { result: supporter.rows }
         includes = [];
-        if (params.include_members) includes.push({ class: 'member', objects: 'result'});
-        if (params.include_initiatives) includes.push({ class: 'initiative', objects: 'result'});
-        if (params.include_issues) includes.push({ class: 'issue', objects: 'initiatives'});
-        if (params.include_areas) includes.push({ class: 'area', objects: 'issues'});
-        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
-        if (params.include_policies) includes.push({ class: 'policy', objects: 'issues' });
+        if (params.include_members) includes.push({ clazz: 'member', objects: 'result'});
+        if (params.include_initiatives) includes.push({ clazz: 'initiative', objects: 'result'});
+        if (params.include_issues) includes.push({ clazz: 'issue', objects: 'initiatives'});
+        if (params.include_areas) includes.push({ clazz: 'area', objects: 'issues'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'areas'});
+        if (params.include_policies) includes.push({ clazz: 'policy', objects: 'issues' });
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -914,11 +927,11 @@ exports.get = {
       db.query(conn, req, res, query, function (result, conn) {
         var result = { result: result.rows }
         includes = [];
-        if (params.include_initiatives) includes.push({ class: 'initiative', objects: 'result'});
-        if (params.include_issues) includes.push({ class: 'issue', objects: 'initiatives'});
-        if (params.include_areas) includes.push({ class: 'area', objects: 'issues'});
-        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
-        if (params.include_policies) includes.push({ class: 'policy', objects: 'issues' });
+        if (params.include_initiatives) includes.push({ clazz: 'initiative', objects: 'result'});
+        if (params.include_issues) includes.push({ clazz: 'issue', objects: 'initiatives'});
+        if (params.include_areas) includes.push({ clazz: 'area', objects: 'issues'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'areas'});
+        if (params.include_policies) includes.push({ clazz: 'policy', objects: 'issues' });
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -926,14 +939,14 @@ exports.get = {
   
   '/draft': function (conn, req, res, params) {
     requireAccessLevel(conn, req, res, 'anonymous', function() {
-      var fields = ['draft.initiative_id', 'draft.id', 'draft.formatting_engine', 'draft.content', 'draft.author_id'];
+      var fields = ['draft.initiative_id', 'draft.id', 'draft.formatting_engine', 'draft.created'];
       var query = new selector.Selector();
       query.from('draft JOIN initiative ON initiative.id = draft.initiative_id JOIN issue ON issue.id = initiative.issue_id JOIN policy ON policy.id = issue.policy_id JOIN area ON area.id = issue.area_id JOIN unit ON area.unit_id = unit.id');
       fields.forEach( function(field) {
         query.addField(field, null, ['grouped']);
       });
       if (req.current_access_level != 'anonymous' || req.current_member_id) {
-        query.addField('draft.author_id');
+        query.addField('draft.author_id', null, ['grouped']);
       }
       if (params.draft_id) {
         query.addWhere('draft.id = ?', params.draft_id);
@@ -941,17 +954,23 @@ exports.get = {
       if (params.current_draft) {
         query.join('current_draft', null, 'current_draft.initiative_id = initiative.id AND current_draft.id = draft.id')
       }
+      if (params.render_content == "html") {
+        query.join('rendered_draft', null, 'rendered_draft.draft_id = draft.id AND rendered_draft.format = \'html\'');
+        query.addField('rendered_draft.content', null, ['grouped']);
+      } else {
+        query.addField('draft.content', null, ['grouped']);
+      }
       general_params.addInitiativeOptions(req, query, params);
       query.addOrderBy('draft.initiative_id, draft.id');
       general_params.addLimitAndOffset(query, params);
       db.query(conn, req, res, query, function (result, conn) {
         var result = { result: result.rows }
         includes = [];
-        if (params.include_initiatives) includes.push({ class: 'initiative', objects: 'result'});
-        if (params.include_issues) includes.push({ class: 'issue', objects: 'initiatives'});
-        if (params.include_areas) includes.push({ class: 'area', objects: 'issues'});
-        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
-        if (params.include_policies) includes.push({ class: 'policy', objects: 'issues' });
+        if (params.include_initiatives) includes.push({ clazz: 'initiative', objects: 'result'});
+        if (params.include_issues) includes.push({ clazz: 'issue', objects: 'initiatives'});
+        if (params.include_areas) includes.push({ clazz: 'area', objects: 'issues'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'areas'});
+        if (params.include_policies) includes.push({ clazz: 'policy', objects: 'issues' });
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -972,11 +991,11 @@ exports.get = {
       db.query(conn, req, res, query, function (result, conn) {
         var result = { result: result.rows }
         includes = [];
-        if (params.include_initiatives) includes.push({ class: 'initiative', objects: 'result'});
-        if (params.include_issues) includes.push({ class: 'issue', objects: 'initiatives'});
-        if (params.include_areas) includes.push({ class: 'area', objects: 'issues'});
-        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
-        if (params.include_policies) includes.push({ class: 'policy', objects: 'issues' });
+        if (params.include_initiatives) includes.push({ clazz: 'initiative', objects: 'result'});
+        if (params.include_issues) includes.push({ clazz: 'issue', objects: 'initiatives'});
+        if (params.include_areas) includes.push({ clazz: 'area', objects: 'issues'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'areas'});
+        if (params.include_policies) includes.push({ clazz: 'policy', objects: 'issues' });
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -997,12 +1016,12 @@ exports.get = {
       db.query(conn, req, res, query, function (result, conn) {
         var result = { result: result.rows }
         includes = [];
-        if (params.include_suggestions) includes.push({ class: 'suggestion', objects: 'result'});
-        if (params.include_initiatives) includes.push({ class: 'initiative', objects: 'suggestions'});
-        if (params.include_issues) includes.push({ class: 'issue', objects: 'initiatives'});
-        if (params.include_areas) includes.push({ class: 'area', objects: 'issues'});
-        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
-        if (params.include_policies) includes.push({ class: 'policy', objects: 'issues' });
+        if (params.include_suggestions) includes.push({ clazz: 'suggestion', objects: 'result'});
+        if (params.include_initiatives) includes.push({ clazz: 'initiative', objects: 'suggestions'});
+        if (params.include_issues) includes.push({ clazz: 'issue', objects: 'initiatives'});
+        if (params.include_areas) includes.push({ clazz: 'area', objects: 'issues'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'areas'});
+        if (params.include_policies) includes.push({ clazz: 'policy', objects: 'issues' });
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -1043,12 +1062,42 @@ exports.get = {
     });
   },
 
+  '/voter': function (conn, req, res, params) {
+    requireAccessLevel(conn, req, res, 'pseudonym', function() {
+      var query = new selector.Selector();
+      query.from('direct_voter JOIN member ON member.id = direct_voter.member_id JOIN issue ON issue.id = direct_voter.issue_id JOIN policy ON policy.id = issue.policy_id JOIN area ON area.id = issue.area_id JOIN unit ON area.unit_id = unit.id');
+      query.addField('direct_voter.*');
+      query.addWhere('issue.closed NOTNULL');
+      general_params.addMemberOptions(req, query, params);
+      general_params.addIssueOptions(req, query, params);
+      general_params.addLimitAndOffset(query, params);
+      db.query(conn, req, res, query, function (result, conn) {
+        respond('json', conn, req, res, 'ok', { result: result.rows });
+      });
+    });
+  },
+
+  '/delegating_voter': function (conn, req, res, params) {
+    requireAccessLevel(conn, req, res, 'pseudonym', function() {
+      var query = new selector.Selector();
+      query.from('delegating_voter JOIN member ON member.id = delegating_voter.member_id JOIN issue ON issue.id = delegating_voter.issue_id JOIN policy ON policy.id = issue.policy_id JOIN area ON area.id = issue.area_id JOIN unit ON area.unit_id = unit.id');
+      query.addField('delegating_voter.*');
+      query.addWhere('issue.closed NOTNULL');
+      general_params.addMemberOptions(req, query, params);
+      general_params.addIssueOptions(req, query, params);
+      general_params.addLimitAndOffset(query, params);
+      db.query(conn, req, res, query, function (result, conn) {
+        respond('json', conn, req, res, 'ok', { result: result.rows });
+      });
+    });
+  },
+
   '/vote': function (conn, req, res, params) {
     requireAccessLevel(conn, req, res, 'pseudonym', function() {
       var query = new selector.Selector();
       query.from('vote JOIN member ON member.id = vote.member_id JOIN initiative ON initiative.id = vote.initiative_id JOIN issue ON issue.id = initiative.issue_id JOIN policy ON policy.id = issue.policy_id JOIN area ON area.id = issue.area_id JOIN unit ON area.unit_id = unit.id');
       query.addField('vote.*');
-      query.addWhere('issue.closed_at NOTNULL');
+      query.addWhere('issue.closed NOTNULL');
       general_params.addMemberOptions(req, query, params);
       general_params.addInitiativeOptions(req, query, params);
       general_params.addLimitAndOffset(query, params);
@@ -1068,16 +1117,16 @@ exports.get = {
       });
       general_params.addMemberOptions(req, query, params);
       general_params.addInitiativeOptions(req, query, params);
-      query.addOrderBy('event.id');
+      query.addOrderBy('event.id DESC');
       general_params.addLimitAndOffset(query, params);
       db.query(conn, req, res, query, function (events, conn) {
         var result = { result: events.rows }
         includes = [];
-        if (params.include_initiatives) includes.push({ class: 'initiative', objects: 'result'});
-        if (params.include_issues) includes.push({ class: 'issue', objects: 'result'});
-        if (params.include_areas) includes.push({ class: 'area', objects: 'issues'});
-        if (params.include_units) includes.push({ class: 'unit', objects: 'areas'});
-        if (params.include_policies) includes.push({ class: 'policy', objects: 'issues' });
+        if (params.include_initiatives) includes.push({ clazz: 'initiative', objects: 'result'});
+        if (params.include_issues) includes.push({ clazz: 'issue', objects: 'result'});
+        if (params.include_areas) includes.push({ clazz: 'area', objects: 'issues'});
+        if (params.include_units) includes.push({ clazz: 'unit', objects: 'areas'});
+        if (params.include_policies) includes.push({ clazz: 'policy', objects: 'issues' });
         addRelatedData(conn, req, res, result, includes);
       });
     });
@@ -1198,7 +1247,6 @@ implemented, but please keep the credentials for future use.\n\
 \n\
 Account ID:               " + member_id + "\n\
 Login:                    " + member_login + "\n\
-Password:                 " + member_password + "\n\
 \n\
 \n\
 To make you able to actually access the API interface, we added the following\n\
