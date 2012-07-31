@@ -115,16 +115,18 @@ var server = http.createServer(function (req, res, params) {
     };
 
     // dispatch request based on method and url
-    
-    var routing_target = routes[url_info.pathname]
-    if (routing_target) {
-      db.query(config.connectionString, req, res, 'START TRANSACTION ISOLATION LEVEL READ COMMITTED READ WRITE', function (result, conn) {
-        routing_target.apply(this, [conn, req, res, params]);
-      });
-    } else {
-      main.respond('json', null, req, res, 'not found');
-    };
-    
+    if (routes) {
+      var routing_target = routes[url_info.pathname]
+      if (routing_target) {
+        db.query(config.connectionString, req, res, 'START TRANSACTION ISOLATION LEVEL READ COMMITTED READ WRITE', function (result, conn) {
+          routing_target.apply(this, [conn, req, res, params]);
+        });
+        return;
+      }
+    }
+
+    main.respond('json', null, req, res, 'not found');
+   
   });
   
 // actually connect the http server to a network interface
