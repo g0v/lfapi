@@ -1,9 +1,5 @@
 #!/usr/bin/env node
 
-// --------------------------------------------------------------------------
-// end of configuration
-// ==========================================================================
-
 var main = require('./lfapi/main.js');
 
 var config = main.config;
@@ -57,7 +53,7 @@ var server = http.createServer(function (req, res, params) {
     });
   };
   
-  console.log(req.socket._idleStart, req.socket.remoteAddress, req.current_member_id, req.current_access_level, url_info.pathname, url_info.query);
+  console.log(req.socket._idleStart, req.socket.remoteAddress, req.current_member_id, req.current_access_level, req.method, url_info.pathname, url_info.query);
 
   var body = '';
   req.on('data', function (data) {
@@ -76,6 +72,29 @@ var server = http.createServer(function (req, res, params) {
     var routes;
     
     switch(req.method) {
+      case 'HEAD':
+        routes = main.get;
+        var routing_target = routes[url_info.pathname]
+        if (routing_target) {
+          res.writeHead(
+            200, 
+            {
+              'Content-Type': "application/json; charset=UTF-8",
+              'Access-Control-Allow-Origin': '*'
+            }
+          );
+        } else {
+          res.writeHead(
+            404, 
+            {
+              'Access-Control-Allow-Origin': '*'
+            }
+          );
+        }
+        res.end(body);
+        return
+        break;
+        
       case 'GET':
         routes = main.get;
         break;
@@ -90,6 +109,7 @@ var server = http.createServer(function (req, res, params) {
         
       default:
         main.respond('json', null, req, res, 'not found');
+        return;
         break;
         
     };

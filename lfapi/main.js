@@ -62,7 +62,7 @@ function respond(mode, conn, req, res, status, object, err) {
     case 'forbidden':
       //http_status = 403;
       break;
-    case 'notfound':
+    case 'not found':
       http_status = 404;
       break;
     case 'unprocessable':
