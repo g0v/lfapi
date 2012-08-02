@@ -34,16 +34,6 @@ var server = http.createServer(function (req, res, params) {
 
   req.sessions = sessions;
   
-  // session handling
-  if (params.session_key) {
-    if (sessions[params.session_key]) {
-      req.current_member_id = sessions[params.session_key];
-      req.current_access_level = 'member'
-    } else {
-      main.respond('json', null, req, res, 'forbidden', 'Invalid session key');
-    }
-  }
-  
   // pick cookies from http headers
   var cookies = {};
   if (req.headers.cookie) {
@@ -53,8 +43,6 @@ var server = http.createServer(function (req, res, params) {
     });
   };
   
-  console.log(req.socket._idleStart, req.socket.remoteAddress, req.current_member_id, req.current_access_level, req.method, url_info.pathname, url_info.query);
-
   var body = '';
   req.on('data', function (data) {
       body += data;
@@ -65,6 +53,20 @@ var server = http.createServer(function (req, res, params) {
       params[key] = post_params[key];
     };
 
+    console.log(req.socket._idleStart, req.socket.remoteAddress, req.current_member_id, req.current_access_level, req.method, url_info.pathname, url_info.query);
+
+    // session handling
+    if (params.session_key) {
+      if (sessions[params.session_key]) {
+        req.current_member_id = sessions[params.session_key];
+        req.current_access_level = 'member'
+      } else {
+        main.respond('json', null, req, res, 'forbidden', 'Invalid session key');
+      }
+    }
+    
+
+    
     if (['POST', 'DELETE'].includes(params.http_method)) {
       req.method = params.http_method;
     }
