@@ -1380,9 +1380,13 @@ Your LiquidFeedback maintainers",
       query.addWhere(['member.id = ?', req.current_member_id]);
       fields.forEach( function(field) {
         if (typeof(params[field]) != 'undefined') {
-          query.addValues({ field: params[field] });
+          var tmp = {};
+          tmp[field] = params[field];
+          query.addValues(tmp);
         } else {
-          query.addValues({ field: null });
+          var tmp = {};
+          tmp[field] = null;
+          query.addValues(tmp);
         }
       });
       db.query(conn, req, res, query, function(result) { respond('json', conn, req, res, 'ok'); });
