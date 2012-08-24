@@ -210,7 +210,7 @@ exports.addInitiativeOptions = function (req, query, params) {
 exports.addSuggestionOptions = function (req, query, params) {
   exports.addInitiativeOptions(req, query, params);
   if (params.suggestion_id) {
-    query.addWhere(['suggestion.id IN (??)', params.suggestion_id]);
+    query.addWhere(['suggestion.id IN (??)', params.suggestion_id.split(',')]);
   }
   if (params.suggestion_search) {
     query.addWhere(['suggestion.text_search_data @@ text_search_query(?)', params.suggestion_search]);
