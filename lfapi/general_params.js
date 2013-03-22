@@ -126,9 +126,6 @@ exports.addIssueOptions = function (req, query, params) {
   if (params.issue_cleaned === '1') query.addWhere('"issue"."cleaned" NOTNULL');
   if (params.issue_cleaned === '0') query.addWhere('"issue"."cleaned" ISNULL');
 
-  if (params.issue_ranks_available === '1') query.addWhere('"issue"."ranks_available"');
-  if (params.issue_ranks_available === '0') query.addWhere('NOT "issue"."ranks_available"');
-
   if (params.issue_created_after) query.addWhere(['"issue"."created" >= ?', params.issue_created_after]);
   if (params.issue_created_before) query.addWhere(['"issue"."created" < ?', params.issue_created_before]);
   if (params.issue_accepted_after) query.addWhere(['"issue"."accepted" >= ?', params.issue_accepted_after]);

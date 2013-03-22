@@ -16,7 +16,7 @@ exports.bind_port = 25520;
 exports.public_access_level = 'full';
 
 // connection string to access the LiquidFeedback Core database
-exports.connectionString = 'pg://localhost/liquid_feedback2';
+exports.connectionString = 'pg://localhost/liquid_feedback';
 
 // public base url (including trailing slash)
 exports.public_url_path = 'http://apitest.liquidfeedback.org:25520/';

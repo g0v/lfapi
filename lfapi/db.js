@@ -48,7 +48,7 @@ exports.query = function (conn, req, res, query_object, callback) {
       query = query_object.assemble(function(i) { return ('$' + (i + 1)); });
     }
     
-    //console.log('  > SQL: ', query.cmd, query.args ? query.args : '');
+    console.log('  > SQL: ', query.cmd, query.args ? query.args : '');
     
     conn.query(query.cmd, query.args, function(err, result) {
       if (err) {
